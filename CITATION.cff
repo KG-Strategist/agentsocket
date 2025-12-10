@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this protocol or reference this architecture, please cite it as below."
+authors:
+- family-names: "Gawde"
+  given-names: "Kunal"
+title: "Agent Socket: Serverless-Native WebSocket Protocol for AI Agents"
+version: 0.1.0-alpha
+date-released: 2025-12-10
+url: "https://github.com/KG-Strategist/agentsocket"
+license: Apache-2.0
