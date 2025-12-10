@@ -3,7 +3,7 @@ message: "If you use this protocol or reference this architecture, please cite i
 authors:
 - family-names: "Gawde"
   given-names: "Kunal"
-title: "Agent Socket: Serverless-Native WebSocket Protocol for AI Agents"
+title: "Agent Socket: Compute Agnostic Native WebSocket Protocol for AI Agents"
 version: 0.1.0-alpha
 date-released: 2025-12-10
 url: "https://github.com/KG-Strategist/agentsocket"
