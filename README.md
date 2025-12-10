@@ -1,11 +1,14 @@
 # Agent Socket
-### Stateful Agents on Stateless Infrastructure.
+### The Universal Protocol for AI Agents.
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Status](https://img.shields.io/badge/Status-Concept%20%2F%20Alpha-orange)](https://github.com)
+[![Status](https://img.shields.io/badge/Status-Architecture%20Frozen%20%2F%20RFC-orange)](https://github.com)
 [![Protocol](https://img.shields.io/badge/Protocol-WebSocket-green)](https://github.com)
+[![Discord](https://img.shields.io/badge/Join-Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/qdJ6tc49C)
 
-**Agent Socket** is a Serverless-Native, WebSocket-first wire protocol engineered from first principles for modern AI Agents. It is designed as a high-performance, bidirectional alternative to HTTP-based standards (like MCP).
+**Agent Socket** is a **Compute-Agnostic**, WebSocket-first wire protocol engineered from first principles for modern AI Agents. It is designed as a high-performance, bidirectional alternative to HTTP-based standards (like MCP), running equally well on **Serverless** (Lambda/Edge) and **Stateful** (Docker/Rust/Python) backends.
+
+> **⚠️ Current Status:** This project is in the **Request for Comments (RFC)** phase. The architecture is defined, and we are now assembling the core contributor team to build the reference implementations. [Join the Discord](https://discord.gg/qdJ6tc49C) to get involved.
 
 ---
 
@@ -13,11 +16,32 @@
 The industry is currently standardizing on **HTTP + SSE** for agentic systems (via MCP). This forces 2025 AI agents to operate with 2015 constraints:
 * **High Latency:** Handshake overhead per interaction.
 * **Unidirectional:** Servers cannot interrupt or steer the client effectively.
-* **Stateless:** Incompatible with complex, multi-turn agent context without external DB bloat.
+* **Stateless Lock-in:** Forces architectures to use external databases for context, even when unnecessary.
 
 ## 🚀 The Solution: Agent Socket
-**Agent Socket** treats the connection as a persistent, stateful stream, even when running on ephemeral infrastructure (Lambda/Edge).
+**Agent Socket** separates the *protocol state* from the *compute runtime*. It offers two distinct modes of operation:
 
+1.  **Direct Mode:** Low-latency (<10ms) stateful connection for dedicated servers (Rust/Python).
+2.  **Relay Mode:** Persistent state management for ephemeral serverless functions (Lambda/Workers).
+---
+## 🦀 Direct Mode
+```mermaid
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#007ACC', 'edgeLabelBackground':'#1e1e1e', 'tertiaryColor': '#2d2d2d'}}}%%
+graph TD
+    Client["📱 Client"]
+    ASP["⚡ Agent Socket Protocol"]
+
+    subgraph "Compute Agnostic Architecture"
+        direction LR
+        RUST["🦀 Direct Mode<br/>(Rust/Python SDK)"]
+        RELAY["🔄 Relay Mode<br/>(Serverless)"]
+    end
+
+    Client ==>|Persistent WebSocket| ASP
+    ASP -.->|"Path A: Max Perf (<10ms)"| RUST
+    ASP ==>|"Path B: Zero Cold Start"| RELAY
+```
+## 🔄 Relay Mode
 ```mermaid
 sequenceDiagram
     participant Client
@@ -43,9 +67,9 @@ sequenceDiagram
 | Feature | Agent Socket (This Protocol) | MCP (HTTP + SSE) |
 | :--- | :--- | :--- |
 | **Transport** | **WebSockets (Binary)** | HTTP (Text/JSON) |
-| **Latency** | **< 30ms** (Persistent) | 100ms+ (Per Request) |
+| **Latency** | **< 10ms - 30ms** | 100ms+ (Per Request) |
 | **Communication** | **True Full-Duplex** | Request / Response |
-| **Serverless** | **Native** (Zero Cold Start) | High Cold Start Penalty |
+| **Flexibility** | **Universal** (Server or Serverless) | Server-Centric |
 | **Discovery** | **Async / Just-in-Time** | Upfront / Static |
 | **Overhead** | **Minimal** (Binary frames) | Heavy (HTTP Headers) |
 
@@ -56,8 +80,9 @@ sequenceDiagram
 ### 1. True Full-Duplex Communication
 Unlike HTTP, where the client must ask before the server speaks, Agent Socket allows agents to push updates, request clarification, or discover tools asynchronously without a new request cycle.
 
-### 2. Serverless-Native Connection Pooling
-Designed for AWS Lambda, Cloudflare Workers, and Azure Functions. The protocol handles connection state management outside the function logic, allowing ephemeral compute to behave like a stateful server.
+### 2. Adaptive Runtime Support
+* **Running on Docker?** Use the Rust/Python SDKs for raw performance.
+* **Running on Lambda?** Use the Relay pattern to maintain state without paying for idle server time.
 
 ### 3. Binary Efficiency
 By eliminating repetitive HTTP headers and using optimized binary framing, Agent Socket reduces network bandwidth usage by up to **50%** compared to verbose JSON-over-HTTP protocols.
@@ -73,13 +98,21 @@ By eliminating repetitive HTTP headers and using optimized binary framing, Agent
 
 ---
 
-## 👤 Author & Philosophy
-**Architected by Kunal Gawde**
+## 🤝 Community & Contributing
+We are actively seeking **Rust**, **Python**, and **TypeScript** engineers to help build the reference implementation.
 
-> *"We shouldn't standardize on technical debt. Existing protocols assume persistent servers; Agent Socket assumes the future is serverless."*
+* **💬 Discord:** [Join the Agent Socket Server](https://discord.gg/qdJ6tc49C) (Best for real-time discussion)
+* **💡 Discussions:** [GitHub Discussions Tab](https://github.com/kunalgawde/agent-socket/discussions) (Best for RFC feedback)
+* **🔗 Connect:** [Kunal Gawde on LinkedIn](https://www.linkedin.com/in/kunal-gawde)
 
 ---
 
+## 👤 Author & Philosophy
+**Architected by Kunal Gawde**
+
+> *"We shouldn't standardize on technical debt. Protocols shouldn't dictate infrastructure—they should empower it. Agent Socket assumes you want the freedom to choose."*
+
+---
 ## 📄 License
 Copyright © 2025 Kunal Gawde. All Rights Reserved.
 
