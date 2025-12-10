@@ -24,44 +24,86 @@ The industry is currently standardizing on **HTTP + SSE** for agentic systems (v
 1.  **Direct Mode:** Low-latency (<10ms) stateful connection for dedicated servers (Rust/Python).
 2.  **Relay Mode:** Persistent state management for ephemeral serverless functions (Lambda/Workers).
 ---
-## 🦀 Direct Mode
-```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#007ACC', 'edgeLabelBackground':'#1e1e1e', 'tertiaryColor': '#2d2d2d'}}}%%
-graph TD
-    Client["📱 Client"]
-    ASP["⚡ Agent Socket Protocol"]
+### 📐 Architecture Deep Dive
 
-    subgraph "Compute Agnostic Architecture"
-        direction LR
-        RUST["🦀 Direct Mode<br/>(Rust/Python SDK)"]
-        RELAY["🔄 Relay Mode<br/>(Serverless)"]
-    end
+<details>
+<summary><strong>Mode 1: Direct Architecture (Rust/Python)</strong> - <em>Click to Expand</em></summary>
+<br>
+Designed for maximum performance (<10ms) using long-lived TCP connections handled directly by the SDK.
 
-    Client ==>|Persistent WebSocket| ASP
-    ASP -.->|"Path A: Max Perf (<10ms)"| RUST
-    ASP ==>|"Path B: Zero Cold Start"| RELAY
-```
-## 🔄 Relay Mode
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant AgentSocket
-    participant ServerlessFn
+    autonumber
+    participant C as 📱 Client
+    participant S as 🦀 Agent Runtime (Rust/Python)
+    participant LLM as 🧠 LLM / Tools
+
+    Note over C, S: ⚡ Mode 1: Direct State | <10ms Latency
     
-    Note over Client, AgentSocket: 30ms Latency (Persistent)
-    Client->>AgentSocket: Connect (Handshake)
-    AgentSocket-->>Client: 101 Switching Protocols
+    C->>S: GET /ws (Upgrade: websocket)
+    S-->>C: 101 Switching Protocols (Sec-WebSocket-Protocol: asp-v1)
     
-    par Standard Stream
-        Client->>AgentSocket: Action Request (Binary)
-        AgentSocket->>ServerlessFn: Invoke (Hot Warm)
-        ServerlessFn-->>AgentSocket: Stream Result
-        AgentSocket-->>Client: Stream Chunk (0.5ms)
-    and Async Events
-        ServerlessFn->>AgentSocket: Async Interrupt / Tool Discovery
-        AgentSocket-->>Client: Push Update
+    note right of C: Persistent TCP Session
+        
+    loop Heartbeat (Every 30s)
+        C-->>S: [0x9 PING]
+        S-->>C: [0x10 PONG]
     end
+
+    C->>S: [0x02 INVOKE] Binary Frame (MsgPack)
+    activate S
+    S->>S: Deserialize & Validate
+    S->>LLM: Stream Inference
+    
+    loop Token Stream
+        LLM-->>S: Token "A"
+        S-->>C: [0x03 STREAM] Token "A"
+    end
+    
+    S-->>C: [0x06 COMPLETE] Execution Metrics
+    deactivate S
+```  
+</details>
+
+<details> <summary><strong>Mode 2: Relay Architecture (Serverless)</strong> - <em>Click to Expand</em></summary>
+
+Designed for AWS Lambda and Edge environments. The Relay holds the connection, preventing cold-start penalties from affecting the client handshake.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 📱 Client
+    participant R as 🔄 Socket Relay (Edge)
+    participant L as λ Serverless Fn
+
+    Note over C, R: 🚀 Mode 2: Relay | Zero Cold-Start
+    
+    C->>R: Connect (WSS)
+    R-->>C: [0x01 HELLO] ConnectionId: 7f8a...
+    
+    note right of C: Connection State Held at Edge
+        
+    C->>R: [0x02 INVOKE] Payload
+    
+    Note over R, L: Map WebSocket Frame -> HTTP Event
+    R->>L: POST /invoke (Body: {cid: 7f8a, payload: ...})
+    
+    activate L
+    L->>L: 🧊 Init / Re-hydrate Context
+    L->>L: Execute Logic
+    
+    loop HTTP Chunked Transfer
+        L-->>R: HTTP Data Chunk
+        R-->>C: [0x03 STREAM] Binary Frame
+    end
+    
+    L-->>R: 200 OK (X-Cpu-Time: 45ms)
+    deactivate L
+    
+    R->>C: [0x05 TOOL_DEF] Async Push
 ```
+</details> 
+
+---
 ## ⚔️ Agent Socket vs. MCP (HTTP)
 
 | Feature | Agent Socket (This Protocol) | MCP (HTTP + SSE) |
